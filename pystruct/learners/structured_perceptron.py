@@ -24,6 +24,11 @@ class StructuredPerceptron(BaseSSVM):
         Object containing model structure. Has to implement
         `loss`, `inference`.
 
+    average : bool,
+        Whether to use the Averaged Perceptron or the regular one.  Averaged
+        Perceptron keeps the average of all weight vectors at all steps, as
+        opposed to the simple perceptron that just keeps the last value.
+
     max_iter : int (default=100)
         Maximum number of passes over dataset to find constraints and update
         parameters.
@@ -42,9 +47,11 @@ class StructuredPerceptron(BaseSSVM):
    ``loss_curve_`` : list of float
         List of loss values after each pass thorugh the dataset.
     """
-    def __init__(self, model, max_iter=100, verbose=0, batch=False):
+    def __init__(self, model, average=False, max_iter=100, verbose=0,
+                 batch=False):
         BaseSSVM.__init__(self, model, max_iter=max_iter, verbose=verbose)
         self.batch = batch
+        self.average = average
 
     def fit(self, X, Y):
         """Learn parameters using structured perceptron.
@@ -63,6 +70,8 @@ class StructuredPerceptron(BaseSSVM):
         n_samples = len(X)
         size_psi = self.model.size_psi
         w = np.zeros(size_psi)
+        if self.average:
+            w_sum = np.zeros(size_psi)
         loss_curve = []
         try:
             for iteration in xrange(self.max_iter):
@@ -80,6 +89,8 @@ class StructuredPerceptron(BaseSSVM):
                         if current_loss:
                             w += alpha * (self.model.psi(x, y) -
                                           self.model.psi(x, y_hat))
+                        if self.average:
+                            w_sum += w
                 else:
                     # standard online update
                     for x, y in zip(X, Y):
@@ -89,6 +100,8 @@ class StructuredPerceptron(BaseSSVM):
                         if current_loss:
                             w += alpha * (self.model.psi(x, y) -
                                           self.model.psi(x, y_hat))
+                        if self.average:
+                            w_sum += w
                 loss_curve.append(float(losses) / n_samples)
                 if self.verbose:
                     print("avg loss: %f w: %s" % (loss_curve[-1], str(w)))
@@ -96,4 +109,4 @@ class StructuredPerceptron(BaseSSVM):
         except KeyboardInterrupt:
             pass
         self.loss_curve_ = loss_curve
-        self.w = w
+        self.w = w_sum / (self.max_iter * n_samples) if self.average else w
