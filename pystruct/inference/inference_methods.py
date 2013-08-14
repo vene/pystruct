@@ -96,7 +96,7 @@ def inference_dispatch(unary_potentials, pairwise_potentials, edges,
                                      edges, **kwargs)
     else:
         raise ValueError("inference_method must be 'lp', 'ad3', 'qpbo', 'ogm'"
-                         " or 'dai', got %s" % inference_method)
+                         "'mp', 'dai' or 'unary', got %s" % inference_method)
 
 
 def inference_ogm(unary_potentials, pairwise_potentials, edges,
